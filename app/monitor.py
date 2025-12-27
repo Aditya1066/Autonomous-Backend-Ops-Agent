@@ -1,48 +1,42 @@
 import httpx
 import time
 
+
+def get_status_from_code(status_code: int | None) -> str:
+    """
+    Convert HTTP status code to health status.
+    """
+    if status_code is None:
+        return "DOWN"
+    if 200 <= status_code < 300:
+        return "HEALTHY"
+    if 400 <= status_code < 500:
+        return "CLIENT_ERROR"
+    return "SERVER_ERROR"
+
+
 def check_endpoint(endpoint):
     """
-    Check a single API endpoint
-    Returns result as Dict
+    Takes an Endpoint SQLAlchemy object
+    and checks its health.
     """
-    url = endpoint["url"]
-    name = endpoint["name"]
-
     start_time = time.time()
 
     try:
-        response = httpx.get(url, timeout=5)
+        response = httpx.get(endpoint.url, timeout=10)
         latency = time.time() - start_time
 
         return {
-            "name" : name,
-            "url": url,
+            "endpoint_id": endpoint.id,
             "status_code": response.status_code,
-            "latency": latency,
-            "status": get_status(response.status_code)
+            "latency": round(latency, 2),
+            "status": get_status_from_code(response.status_code),
         }
-    
-    except Exception as e:
+
+    except Exception:
         return {
-            "name": name,
-            "url": url,
+            "endpoint_id": endpoint.id,
             "status_code": None,
             "latency": None,
             "status": "DOWN",
         }
-    
-def get_status(status_code):
-    """
-    Determine status based on HTTP status code
-    """
-    if status_code is None:
-        return "DOWN"
-    elif 200 <= status_code < 300:
-        return "UP"
-    elif 400 <= status_code < 500:
-        return "CLIENT ERROR"
-    elif 500 <= status_code < 600:
-        return "SERVER ERROR"
-    else:
-        return "UNKNOWN"

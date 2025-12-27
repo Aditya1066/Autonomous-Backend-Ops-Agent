@@ -1,17 +1,14 @@
 from sqlalchemy import ForeignKey, String, create_engine
-from sqlalchemy.orm import Session
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base
 
-db_url = "sqlite:///test.db"
+DATABASE_URL = "sqlite:///./monitor.db"
 
 
-class Base(DeclarativeBase):
-    pass
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
-engine = create_engine(db_url, echo=True)
+SessionLocal = sessionmaker(bind=engine)
 
-Base.metadata.create_all(engine)
-
-def create_session():
-    with Session(engine) as session:
-        yield session
+Base = declarative_base()

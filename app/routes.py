@@ -1,29 +1,63 @@
-from fastapi import APIRouter
-from app.config import ENDPOINTS
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import SessionLocal
+from app.models import Endpoint, Check
 from app.monitor import check_endpoint
+from app.monitoring_service import run_and_store_check
+
 
 router = APIRouter()
 
-latest_results = []
 
-@router.get("/status")
-async def get_status():
-    """
-    Get the latest status of all monitored endpoints
-    """
-    return {"results": latest_results}
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 @router.get("/check-now")
-async def check_now():
+def check_now(db: Session = Depends(get_db)):
     """
-    Trigger an immediate check of all monitored endpoints
+    Trigger check for all endpoints in DB
     """
-    global latest_results
 
+    endpoints = db.query(Endpoint).all()
     results = []
-    for endpoint in ENDPOINTS:
-        result = check_endpoint(endpoint)
+
+    for endpoint in endpoints:
+        result = run_and_store_check(endpoint, db)
+
         results.append(result)
 
-    latest_results = results
-    return {"message": "Endpoints checked", "results": latest_results}
+    db.commit()
+
+    return {"results": results}
+
+
+@router.get("/status")
+def get_status(db: Session = Depends(get_db)):
+    """
+    Get latest status for each endpoint
+    """
+
+    endpoints = db.query(Endpoint).all()
+    response = []
+
+    for endpoint in endpoints:
+        latest = (
+            db.query(Check)
+            .filter(Check.endpoint_id == endpoint.id)
+            .order_by(Check.created_at.desc())
+            .first()
+        )
+
+        response.append({
+            "endpoint": endpoint.name,
+            "status": latest.status if latest else "UNKNOWN",
+            "latency": latest.latency if latest else None
+        })
+
+    return {"results": response}

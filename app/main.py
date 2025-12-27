@@ -1,6 +1,10 @@
+import uvicorn
 from fastapi import FastAPI
 from app.routes import router
-import uvicorn
+from app.database import engine
+from app import models
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Endpoint Monitor API", version="1.0.0")
 
@@ -10,7 +14,7 @@ async def root():
 
 app.include_router(
     router,
-    prefix="/api/v1",
+    prefix="/api",
     tags=["monitoring"]
 )
 
