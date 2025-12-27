@@ -6,8 +6,12 @@ from app.models import Endpoint, Check
 from app.monitor import check_endpoint
 from app.monitoring_service import run_and_store_check
 
+from app.auth import get_current_user
+from app.models import User
 
-router = APIRouter()
+
+
+main_router = APIRouter()
 
 
 def get_db():
@@ -18,13 +22,18 @@ def get_db():
         db.close()
 
 
-@router.get("/check-now")
-def check_now(db: Session = Depends(get_db)):
+@main_router.get("/check-now")
+def check_now(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Trigger check for all endpoints in DB
     """
 
-    endpoints = db.query(Endpoint).all()
+    endpoints = (
+        db.query(Endpoint)
+        .filter(Endpoint.user_id == current_user.id)
+        .all()
+    )
+
     results = []
 
     for endpoint in endpoints:
@@ -37,8 +46,8 @@ def check_now(db: Session = Depends(get_db)):
     return {"results": results}
 
 
-@router.get("/status")
-def get_status(db: Session = Depends(get_db)):
+@main_router.get("/status")
+def get_status(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Get latest status for each endpoint
     """

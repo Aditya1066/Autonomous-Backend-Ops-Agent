@@ -8,28 +8,34 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True, nullable=False)
+    api_key = Column(String, unique=True, index=True)
 
     projects = relationship("Project", back_populates="owner")
 
 class Project(Base):
     __tablename__ = "projects"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String)
-    user_id = Column(Integer, ForeignKey("users.id"))
 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="projects")
+
     endpoints = relationship("Endpoint", back_populates="project")
 
 class Endpoint(Base):
     __tablename__ = "endpoints"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String)
     url = Column(String)
-    project_id = Column(Integer, ForeignKey("projects.id"))
 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+
+    owner = relationship("User")
     project = relationship("Project", back_populates="endpoints")
+
     checks = relationship("Check", back_populates="endpoint")
 
 class Check(Base):

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+import secrets
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import User
 
-router = APIRouter(prefix="/users", tags=["users"])
+users_router = APIRouter(prefix="/users", tags=["users"])
 
 def get_db():
     db = SessionLocal()
@@ -12,13 +13,22 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/")
+
+@users_router.post("/")
 def create_user(email: str, db: Session = Depends(get_db)):
-    """
-    Create a new user with the given email
-    """
-    user = User(email=email)
-    db.add(user) 
+    api_key = secrets.token_hex(16)
+
+    user = User(
+        email=email,
+        api_key=api_key
+    )
+
+    db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "api_key": api_key  
+    }

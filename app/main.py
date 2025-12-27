@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
-from app.routes import router
+from app.routes import main_router
+from app.users import users_router
 from app.database import engine
 from app import models
 
@@ -31,7 +32,11 @@ async def root():
     return {"message": "Hello World"}
 
 app.include_router(
-    router,
+    main_router,
+    prefix="/api"
+)
+app.include_router(
+    users_router,
     prefix="/api"
 )
 
