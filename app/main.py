@@ -4,9 +4,27 @@ from app.routes import router
 from app.database import engine
 from app import models
 
-models.Base.metadata.create_all(bind=engine)
+from app.background_monitor import monitoring_loop
+from contextlib import asynccontextmanager
+import threading
 
-app = FastAPI(title="Endpoint Monitor API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- STARTUP ---
+    models.Base.metadata.create_all(bind=engine)
+
+    monitor_thread = threading.Thread(
+        target=monitoring_loop,
+        daemon=True
+    )
+    monitor_thread.start()
+
+    yield  
+
+    # --- SHUTDOWN ---
+
+
+app = FastAPI(title="Backend Monitoring Service", lifespan=lifespan)
 
 @app.get("/")
 async def root():
@@ -14,8 +32,7 @@ async def root():
 
 app.include_router(
     router,
-    prefix="/api",
-    tags=["monitoring"]
+    prefix="/api"
 )
 
 if __name__ == "__main__":

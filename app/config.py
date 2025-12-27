@@ -1,5 +1,3 @@
-
-
 ENDPOINTS = [
     {
         "name": "Healthy API",
@@ -15,5 +13,4 @@ ENDPOINTS = [
     }
 ]
 
-#it is in seconds
-CHECK_INTERVAL = 10  
+CHECK_INTERVAL_SECONDS = 30
