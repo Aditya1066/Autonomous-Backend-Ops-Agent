@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models import Project
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
